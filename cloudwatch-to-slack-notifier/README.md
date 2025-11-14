@@ -1,48 +1,124 @@
-# 📢 CloudWatch-to-Slack-Notifier | 運用効率を5倍にする高速 ERROR アラート通知ソリューション  
+# CloudWatch Logs → Slack Real-Time Notifier (1 error = 1 notification)
 
-## 🎯 目的 (Why this solution is needed)
-AWS のデフォルトの CloudWatch 通知は情報が多く、「エンジニア以外だと辿り着くのに時間がかかる上に、なかなか読み解けない」「重要な ERROR アラートが他のメールに埋もれ見逃しがちになる」ことが多いという課題があります。  
+## 🎯 What this template does
+CloudWatch Logs の **サブスクリプションフィルター** を使い、  
+対象ログに “ERROR” が1行出るごとに、**数秒以内に Slack へ 1 件通知**します。
 
-このツールでは、**運用チーム全員が直感的に理解できるように通知を設計** しています。  
-これにより、ERROR アラート発生時の検知スピードと対応効率が向上し、システム運用における認知負荷を軽減します。
+- 即時性：1〜3秒  
+- 1ログ = 1通知  
+- Slack Workflow に対応  
 
-### 🚀 導入実績
-- 既存環境で「エラー認識→エラー概要把握」まで5分かかっていた作業が10秒に短縮した事例があります。
-    - Before: メールで通知が来るのに気づく -> AWS にログインする -> CloudWatch ログの該当箇所を探す
-    - After: Slack に通知が届く -> 通知を見る
+## 🏗 Architecture
+![CloudWatch to Slack](./img/CloudWatch_to_Slack.png)
 
-- AWS にログインしなくても Slack 上で ERROR ログの概要を見ることができるため、  
-AWS ログイン権限が無いメンバーであっても初期対応ができるようになった、という事例があります。  
+## 🚀 Use Cases
+- APIエラーを1件ずつ即通知したい（遅延・集約を避けたい）  
+- 本番環境で「誰がログインしたか」をリアルタイムに把握したい 
+- バッチ処理の成功/失敗をリアルタイムに把握したい  
 
-## ✨ 特長 (Features & Benefits)
-- アクションリンク: Slack 通知内に、対応マニュアル（Runbook）や該当する AWS コンソール画面（ Lambda のログなど）へのダイレクトリンクを配置可能です。  
-- サーバーレス構成: AWS Lambda を利用した構成のため、スケーラビリティが高く、運用保守コストを最小限に抑えられます。  
+## ⚙ Setup Steps
+1. Lambdaデプロイ  
+2. Slack Webhook作成  
+3. CloudWatch Logs → Subscription Filter を設定  
+4. テストログを投入し、Slackに通知されることを確認  
 
-## 💡 応用例 (Use Cases Beyond Errors)
-ログの出力内容によっては、エラー通知以外に、システム監視やビジネス通知としても応用可能です。
-- 「誰が本番環境にログインしたか」をリアルタイムで通知する。
-- 「顧客データが削除」されたといった機密性の高いアクションを通知する。
-- バッチ処理の「完了/失敗」ステータスを通知する。
+## 📢 Specific example of log
+以下のログが CloudWatch に出たとき：
+```
+ERROR: {'statusCode': 500, 'headers': {...}, 'body': '{...}'}
+```
+Slack には次のように通知される：
+```
+@channel 📢 ＜システムA＞ でエラーが発生しました！
+エラー対応方法概要はコチラ: ＜マニュアルのURL＞
+下記ログのURL: ＜CloudWatchログ＞
+ERROR: {'statusCode': 500, 'headers': {...}, 'body': '{...}'}
+↓リアクションしてください！（確認開始: 👀, 対応完了: ✅）
+```
 
----
+## 🔧 Lambda (Source + responsibilities)
+- SNS 不要: 直接 Slack へ HTTP POST  
+- CloudWatch Logs イベントを base64 + gzip → 復号 → JSON展開  
+- ログ本文・CloudWatchログURL・対象サービス名を抽出し、Slackへ送信  
+- 複数行ログは `MAX_LINES` まで出力  
+- マルチ環境（複数PATH_{n}）に対応可能  
 
-## 🏛️ 構成図（アーキテクチャ図）
-<!-- 図を掲載予定 -->
+🔗 **Source:**  
+https://github.com/amomo0220/aws-automation-templates/blob/main/cloudwatch-to-slack-notifier/Lambda/lambda_handler.py
 
-## 🧩 環境変数 (Environment Variables)
 
-| キー | 値 |
-|-----|-----|
-| HOOK_URL_{n} | (送信先のSlackに作成した webhook URL) |
-| MAX_LINES | (最大で何行、エラーログ内容を出力するか) |
-| PATH_{n} | (検知する対象のサービスのパス) |
-| PROJECT_NAME_{n} | (対象システム名) |
-※ {n}: `1`を初期値に、一つずつ増やしていく
+### 🔧 Environment Variables
+| Key | Value |
+|-----|-------|
+| HOOK_URL_{n} | Slack Webhook URL |
+| PATH_{n} | 検知対象サービスのパス |
+| PROJECT_NAME_{n} | 対象システム名 |
+| MAX_LINES | Slackへ出力する最大行数 |
 
-## 💰 コスト（月額費用目安）
-本ソリューションは AWS Lambda の無料枠内で運用できるように設計されており、トラフィックが標準的な中規模システムの場合、  
-**月額費用はほぼ発生しません**。（数円〜数十円程度）
+例：
+```
+HOOK_URL_1=https://hooks.slack...
+MAX_LINES=3
+PATH_1=/prod/items
+PROJECT_NAME_1=ServiceA
+```
 
-## 📝 ライセンス (License)
-本プロジェクトは [MIT License] のもとで公開されています。  
+### 🧪 Testing
+`examples/` に CloudWatch Logs → Lambda と同じ形式の `sample_event.json` を同梱しています。
+
+## 📝 Subscription Filter Examples
+```
+?ERROR ?error
+```
+※ログ形式に応じて変更可能
+
+## 💡 Design Notes (Why Subscription Filter?)
+- メトリクスフィルターは「**件数カウント→閾値超え**」の仕組みのため  
+  - リアルタイム性が出ない  
+  - 1エラー = 1通知 ができない  
+- Subscription Filter の方が  
+  - 即時性（1〜3秒）  
+  - ログ個別処理  
+  - 通知整形  
+  に向いている  
+
+⚠ 注意：Subscription Filter は **1ロググループにつき最大2件** まで。
+
+## 💰 Cost (月額費用目安)
+Lambda は無料枠でほぼ収まり、  
+標準的な中規模システムの場合、**月額 数円〜数十円 程度**です。
+
+## 🔧 Slack Workflow (optional)
+- Slack で Webhook を作成  
+- 変数例：`text`, `log_url`, `project_name`  
+- 投稿テンプレ例：
+```
+@channel 📢 {}project_name でエラーが発生しました！
+エラー対応方法概要はコチラ: ＜マニュアルのURL＞
+下記ログのURL: {}log_url
+{}text
+↓リアクションしてください！（確認開始: 👀, 対応完了: ✅）
+```
+
+## ❗ Known Pitfalls
+- `The log group provided is reserved for the function logs of the destination function.`  
+  → Lambda自身のログには紐づけ不可。別の通知用Lambdaを使用すること。  
+- 監視対象のログのフォーマットによっては、もっと通知内容の自由度が上がる  
+
+## 📚 FAQ
+### ユーザー視点
+- 「こういう通知を出したい」  
+  → CloudWatch ログ形式・検知ワードを確認しながら設計・提案可能
+- 「通知の文面を変えたい」  
+  → Slack Workflow／Lambda の整形部で変更可能  
+
+### エンジニア視点
+- 「通知が2回出る」  
+  → ログ側で2行出ている可能性が高い  
+- 「サブスクリプションフィルターではなく、メトリクスフィルターではダメ？」  
+  → メトリクスフィルターの場合、集約しての通知になってしまう。リアルタイム用途には不向き  
+  → ダッシュボード用途なら併用は有効  
+
+## 📝 License
+本プロジェクトは [MIT License](LICENSE) のもとで公開されています。  
 Created by amomo0220
