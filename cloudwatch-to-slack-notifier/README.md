@@ -2,9 +2,9 @@
 
 ## 🎯 What this template does
 CloudWatch Logs の **サブスクリプションフィルター** を使い、  
-対象ログに “ERROR” が1行出るごとに、**数秒以内に Slack へ 1 件通知**します。
+対象ログに “ERROR” が1行出るごとに、**数10秒以内に Slack へ 1 件通知**します。
 
-- 即時性：1〜3秒  
+- 即時性：約15秒（1分かからない）  
 - 1ログ = 1通知  
 - Slack Workflow に対応  
 
@@ -90,10 +90,10 @@ python local_test.py
 
 ## 💡 Design Notes (Why Subscription Filter?)
 - メトリクスフィルターは「**件数カウント→閾値超え**」の仕組みのため  
-  - リアルタイム性が出ない  
+  - リアルタイム性が出ない（1分以上かかる）  
   - 1エラー = 1通知 ができない  
 - Subscription Filter の方が  
-  - 即時性（1〜3秒）  
+  - 即時性（1分かからない）  
   - ログ個別処理  
   - 通知整形  
   に向いている  
