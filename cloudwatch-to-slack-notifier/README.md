@@ -63,8 +63,24 @@ PATH_1=/prod/items
 PROJECT_NAME_1=ServiceA
 ```
 
-### 🧪 Testing
-`examples/` に CloudWatch Logs → Lambda と同じ形式の `sample_event.json` を同梱しています。
+### 🧪 Local Testing
+- `examples/` に、
+  - CloudWatch Logs → Lambda と同じ形式のテストデータ `sample_event.json` を同梱
+  - テストデータ `sample_event.json` を作成する `generate_sample_event.py` を同梱
+- `src/` に、ローカルテストコード `local_test.py` を同梱
+
+以下のコマンドで、テストデータ作成 → ローカルテストを実行可能。
+```
+# generate_sample_event.py の配置されているディレクトリで以下を実行
+# テストデータ sample_event.json が生成される
+python generate_sample_event.py
+
+# 以下は、local_test.py が配置されているディレクトリで実行する
+# Slack には投げず、中身だけ確認したいときは以下を実行
+python local_test.py --dry-run
+# Slack に投げるところ含めて確認したいときは以下を実行
+python local_test.py
+```
 
 ## 📝 Subscription Filter Examples
 ```
