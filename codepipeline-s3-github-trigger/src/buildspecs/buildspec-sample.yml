@@ -1,0 +1,10 @@
+# サンプルのCodeBuild設定version: 0.2
+
+phases:
+  build:
+    commands:
+      - echo "Build running..."
+      - ls -al
+artifacts:
+  files:
+    - '**/*'

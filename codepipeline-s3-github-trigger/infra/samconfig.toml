@@ -1,0 +1,10 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "codepipeline-trigger-dev"
+region = "ap-northeast-1"
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+resolve_s3 = true
+s3_prefix = "codepipeline-trigger-dev"
+parameter_overrides = "GitHubOwner=your-github-id GitHubRepo=your-repo-name GitHubBranch=main S3UploadBucketName=codepipeline-artifacts-dev-to-slack ArtifactBucketName=codepipeline-artifacts-dev-to-slack GitHubConnectionArn=arn"
