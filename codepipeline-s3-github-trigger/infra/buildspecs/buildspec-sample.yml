@@ -1,4 +1,4 @@
-# サンプルのCodeBuild設定version: 0.2
+# サンプルのCodeBuild設定
 
 phases:
   build:

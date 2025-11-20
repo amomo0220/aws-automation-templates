@@ -109,7 +109,7 @@ def build_message(event: dict) -> str:
     status = detail.get("build-status")
 
     if not project or not status:
-        # 想定外のイベント形式。event 全体をログに吐くと大変なので一部だけ。
+        # 想定外のイベント形式。event 全体をログに吐くと大変なので一部だけ
         logger.warning(
             "Unexpected event format: project=%s status=%s event_snippet=%s",
             project,
