@@ -1,1 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.env
+.env
+.venv/
+venv/
+.envrc
+
+# SAM / AWS
+.aws-sam/
+.aws/
+samconfig.toml.local
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Logs
+*.log
+
+# Local environment files
 cloudwatch-to-slack-notifier/src/local.env
