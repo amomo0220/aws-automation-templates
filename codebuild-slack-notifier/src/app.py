@@ -5,7 +5,7 @@ import urllib.request
 import urllib.error
 import boto3
 from botocore.exceptions import ClientError
-from typing import Any, Tuple
+from typing import Any, Dict
 
 LOGGER_PREFIX = "[SlackNotifier] "
 
@@ -16,9 +16,10 @@ ssm = boto3.client("ssm")
 
 
 # 1. handler
-def lambda_handler(event: dict, context: Any) -> None:
+def lambda_handler(event: dict, context: Any) -> Dict[str, Any]:
     """
-    エントリーポイント
+    AWS Lambda エントリーポイント。
+    CodeBuild イベントを受け取り、Slack に通知した結果を返す。
     """
     logger.info("%s Received event: %s", LOGGER_PREFIX, json.dumps(event, default=str)[:500])
 
@@ -73,7 +74,13 @@ def build_message(event: dict) -> str:
 # 3. 外部 I/O
 def get_webhook_url() -> str:
     """
-    SSM から Webhook URL を取得
+    SSM パラメータストア から Webhook URL を取得する。
+
+    Returns:
+        SSM に保存された Webhook URL。
+    Raises:
+        ClientError: SSM API 呼び出しに失敗した場合。
+        RuntimeError: パラメータが未設定または空文字の場合。
     """
     param_name = os.environ.get("SLACK_WEBHOOK_SSM_PARAM_NAME")
 
