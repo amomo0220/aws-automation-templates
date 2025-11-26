@@ -115,6 +115,7 @@ sam deploy --guided
 
 ## 🧪 Testing
 
+以下のテストデータを送信した際に、
 Slack にメッセージが届くことを確認してください。
 
 ### SUCCEEDED
