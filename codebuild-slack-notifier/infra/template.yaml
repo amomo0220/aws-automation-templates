@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: >
+  CodePipeline Trigger Template (S3 + GitHub)
+
+Globals:
+  Function:
+    Runtime: python3.10
+    Timeout: 30
+
+Parameters:
+  GitHubOwner:
+    Type: String
+  GitHubRepo:
+    Type: String
+  GitHubBranch:
+    Type: String
+  S3UploadBucketName:
+    Type: String
+  ArtifactBucketName:
+    Type: String
+  GitHubConnectionArn:
+    Type: String
+    Description: "ARN of the CodeStar connection to GitHub"
+
+Resources:
+  SlackNotifierFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      CodeUri: ../src/slack_notifier/
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - SSMParameterReadPolicy:
+            ParameterName: "amomo/codepipeline/slack_webhook"
+      Environment:
+        Variables:
+          SLACK_WEBHOOK_SSM_PARAM_NAME: "/amomo/codepipeline/slack_webhook"
+
+Outputs:
+  SlackNotifierFunctionName:
+    Description: "Name of the Slack notifier Lambda function"
+    Value: !Ref SlackNotifierFunction
